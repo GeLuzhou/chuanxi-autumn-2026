@@ -5,9 +5,9 @@ import {ToggleGroup,ToggleGroupItem} from "@/components/ui/toggle-group";
 import {days,places,placeById,overviewIds,routes} from "@/lib/trip-data";
 import {loadAMap,getTripCoordinates,coordinateKey,type AMapAPI,type MapInstance,type Overlay,type Position} from "@/lib/amap";
 import {readDeviceMapConfig} from "@/lib/amap-device-config";
+import {createTripLayers,setTripLayerMode,type LayerMode,type TripLayers} from "@/lib/amap-layers";
 import MapDeviceSettings from "./map-device-settings";
 type Props={dayId:number;onPlace:(id:string)=>void;counts:Record<string,number>;onOverview:()=>void};
-type LayerMode="standard"|"satellite";
 
 export default function TripMap({dayId,onPlace,counts,onOverview}:Props){
   const el=useRef<HTMLDivElement>(null);
@@ -15,7 +15,7 @@ export default function TripMap({dayId,onPlace,counts,onOverview}:Props){
   const lib=useRef<AMapAPI|null>(null);
   const coordinates=useRef(new Map<string,Position>());
   const overlays=useRef<Overlay[]>([]);
-  const layers=useRef<{standard:unknown;satellite:unknown;roads:unknown}|null>(null);
+  const layers=useRef<TripLayers|null>(null);
   const pick=useRef(onPlace);pick.current=onPlace;
   const [ready,setReady]=useState(false);
   const [loaded,setLoaded]=useState(false);
@@ -27,6 +27,7 @@ export default function TripMap({dayId,onPlace,counts,onOverview}:Props){
   const [layerMode,setLayerMode]=useState<LayerMode>(()=>{
     try{return localStorage.getItem("chuanxi-map-layer")==="satellite"?"satellite":"standard";}catch{return "standard";}
   });
+  const initialLayerMode=useRef(layerMode);
   useEffect(()=>{
     if(!configured)return;
     let disposed=false;let resize:ResizeObserver|undefined;let timeout:number|undefined;
@@ -34,8 +35,8 @@ export default function TripMap({dayId,onPlace,counts,onOverview}:Props){
       const converted=getTripCoordinates();
       if(disposed||!el.current)return;
       lib.current=A;coordinates.current=converted;
-      layers.current={standard:A.createDefaultLayer(),satellite:new A.TileLayer.Satellite(),roads:new A.TileLayer.RoadNet()};
-      const m=new A.Map(el.current,{viewMode:"2D",center:[101.5,30.3],zoom:7,zooms:[4,18],resizeEnable:true,animateEnable:true,layers:[layers.current.standard]});
+      layers.current=createTripLayers(A,initialLayerMode.current);
+      const m=new A.Map(el.current,{viewMode:"2D",center:[101.5,30.3],zoom:7,zooms:[4,18],resizeEnable:true,animateEnable:true,showLabel:true,features:["bg","point","road","building"],layers:Object.values(layers.current)});
       map.current=m;
       timeout=window.setTimeout(()=>{if(!disposed)setError("高德底图加载较慢，可稍后重试；行程与景点仍可浏览。");},30000);
       m.on("complete",()=>{if(!disposed){window.clearTimeout(timeout);setLoaded(true);setError("");}});
@@ -45,7 +46,7 @@ export default function TripMap({dayId,onPlace,counts,onOverview}:Props){
   },[configured]);
   useEffect(()=>{
     if(!ready||!map.current||!layers.current)return;
-    const l=layers.current;map.current.setLayers(layerMode==="satellite"?[l.satellite,l.roads]:[l.standard]);
+    setTripLayerMode(layers.current,layerMode);
     try{localStorage.setItem("chuanxi-map-layer",layerMode);}catch{/* Preference storage is optional. */}
   },[ready,layerMode]);
   useEffect(()=>{

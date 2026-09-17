@@ -2,11 +2,11 @@ import { readDeviceMapConfig } from "./amap-device-config";
 import savedCoordinates from "./trip-coordinates.json";
 export type Position = [number, number]; // AMap: longitude, latitude (GCJ-02).
 export type Overlay = { on: (event: string, callback: () => void) => void };
+export type BaseLayer = { show: () => void; hide: () => void };
 export type MapInstance = {
   on: (event: string, callback: () => void) => void;
   add: (overlay: Overlay | Overlay[]) => void;
   remove: (overlay: Overlay[]) => void;
-  setLayers: (layers: unknown[]) => void;
   setFitView: (overlays: Overlay[], immediately: boolean, padding: number[], maxZoom: number) => void;
   resize: () => void; zoomIn: () => void; zoomOut: () => void; destroy: () => void;
 };
@@ -15,8 +15,8 @@ export type AMapAPI = {
   Marker: new (options: Record<string, unknown>) => Overlay;
   Polyline: new (options: Record<string, unknown>) => Overlay;
   Pixel: new (x: number, y: number) => unknown;
-  createDefaultLayer: () => unknown;
-  TileLayer: { Satellite: new () => unknown; RoadNet: new () => unknown };
+  createDefaultLayer: (options?: Record<string, unknown>) => BaseLayer;
+  TileLayer: { Satellite: new (options?: Record<string, unknown>) => BaseLayer; RoadNet: new (options?: Record<string, unknown>) => BaseLayer };
 };
 declare global {
   interface Window {

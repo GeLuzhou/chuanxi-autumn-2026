@@ -29,3 +29,5 @@
 .map-canvas .pin-body:focus-visible{outline:3px solid #f8b955;outline-offset:5px;border-radius:6px}
 .map-error{top:263px}.map-loading{position:absolute;top:263px;left:26px;z-index:5;display:flex;align-items:center;gap:8px;background:#fffffff0;color:#597082;padding:10px 13px;border-radius:7px;font-size:13px}
 @media(max-width:640px){.map-layer-switch{left:13px;top:148px}.map-layer-switch [data-slot="toggle-group-item"]{height:32px;padding:0 9px;font-size:12px}.map-zoom{right:13px;top:13px}.map-zoom button{width:32px;height:36px}.map-error{top:198px;left:13px;max-width:calc(100% - 26px);padding:9px 11px}.map-loading{top:198px;left:13px;font-size:12px}}
+
+@media(max-width:900px){.private-label{display:none}}

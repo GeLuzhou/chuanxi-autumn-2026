@@ -19,6 +19,7 @@ export default function TripMap({dayId,onPlace,counts,onOverview}:Props){
   const [loaded,setLoaded]=useState(false);
   const [error,setError]=useState("");
   const [scope,setScope]=useState<"west"|"all">("west");
+  const [viewRevision,setViewRevision]=useState(0);
   const [layerMode,setLayerMode]=useState<LayerMode>(()=>{
     try{return localStorage.getItem("chuanxi-map-layer")==="satellite"?"satellite":"standard";}catch{return "standard";}
   });
@@ -75,11 +76,11 @@ export default function TripMap({dayId,onPlace,counts,onOverview}:Props){
     const fitting=points.map(([lat,lng])=>new A.Marker({position:coordinates.current.get(coordinateKey(lat,lng))}));
     const narrow=(el.current?.clientWidth||0)<600;
     m.setFitView(fitting,false,narrow?[195,130,38,85]:[245,160,65,270],dayId?(points.length<=2?16:13):8);
-  },[ready,dayId,scope]);
+  },[ready,dayId,scope,viewRevision]);
   return <>
     <div ref={el} className="map-canvas" data-map-provider="amap" data-map-layer={layerMode} data-map-ready={loaded} aria-label="高德旅行地图，点选地点查看介绍与照片"/>
     <div className="map-heading"><span className="eyebrow">{dayId?`DAY ${String(dayId).padStart(2,"0")} / ${days.length}`:scope==="west"?"WESTERN SICHUAN":"OUR AUTUMN JOURNEY"}</span><h2>{dayId?days[dayId-1].title:scope==="west"?"川西，一路向山":`从南京出发的${days.length}天`}</h2><p>{dayId?days[dayId-1].subtitle:"点开地图上的地点，看风景、行程与相册。"}</p></div>
-    <div className="map-view-actions"><button onClick={()=>{setScope("west");onOverview()}}><LocateFixed size={16}/>川西环线</button><button onClick={()=>{setScope("all");onOverview()}}><Maximize size={16}/>完整旅程</button></div>
+    <div className="map-view-actions"><button onClick={()=>{setScope("west");setViewRevision(n=>n+1);onOverview()}}><LocateFixed size={16}/>川西环线</button><button onClick={()=>{setScope("all");setViewRevision(n=>n+1);onOverview()}}><Maximize size={16}/>完整旅程</button></div>
     <ToggleGroup type="single" value={layerMode} onValueChange={value=>{if(value)setLayerMode(value as LayerMode);}} className="map-layer-switch" aria-label="地图图层">
       <ToggleGroupItem value="standard" aria-label="标准地图"><MapIcon size={16}/>标准地图</ToggleGroupItem>
       <ToggleGroupItem value="satellite" aria-label="卫星地图"><Satellite size={16}/>卫星地图</ToggleGroupItem>

@@ -1,4 +1,18 @@
 export const photoCredits:Record<string,{subject:string;source:string;artist:string;license:string;license_url:string}>={
+"wuhou": {
+    "subject": "成都武侯祠",
+    "source": "https://commons.wikimedia.org/wiki/File:%E6%88%90%E9%83%BD%E7%9A%84%E6%AD%A6%E4%BE%AF%E7%A5%A0.jpg",
+    "artist": "螺钉",
+    "license": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0"
+  },
+  "jinli": {
+    "subject": "成都锦里",
+    "source": "https://commons.wikimedia.org/wiki/File:ChengduJinli.jpg",
+    "artist": "Fanghong",
+    "license": "CC BY-SA 3.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/3.0"
+  },
   "chongqing": {
     "subject": "重庆洪崖洞",
     "source": "https://commons.wikimedia.org/wiki/File:%E9%87%8D%E5%BA%86%E6%B4%AA%E5%B4%96%E6%B4%9E.jpg",

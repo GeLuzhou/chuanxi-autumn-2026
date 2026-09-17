@@ -5,3 +5,6 @@ dist/
 ._*
 *.tsbuildinfo
 *.log
+private-map-config/
+*本机配置.json
+*.private.json

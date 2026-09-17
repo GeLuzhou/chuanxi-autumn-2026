@@ -1,9 +1,11 @@
 "use client";
 import {useEffect,useRef,useState} from "react";
-import {Maximize,LocateFixed,MapPinned,Map as MapIcon,Satellite,Plus,Minus,LoaderCircle} from "lucide-react";
+import {Maximize,LocateFixed,MapPinned,Map as MapIcon,Satellite,Plus,Minus,LoaderCircle,Settings2,FileKey2} from "lucide-react";
 import {ToggleGroup,ToggleGroupItem} from "@/components/ui/toggle-group";
 import {days,places,placeById,overviewIds,routes} from "@/lib/trip-data";
-import {loadAMap,convertTripCoordinates,coordinateKey,type AMapAPI,type MapInstance,type Overlay,type Position} from "@/lib/amap";
+import {loadAMap,getTripCoordinates,coordinateKey,type AMapAPI,type MapInstance,type Overlay,type Position} from "@/lib/amap";
+import {readDeviceMapConfig} from "@/lib/amap-device-config";
+import MapDeviceSettings from "./map-device-settings";
 type Props={dayId:number;onPlace:(id:string)=>void;counts:Record<string,number>;onOverview:()=>void};
 type LayerMode="standard"|"satellite";
 
@@ -18,15 +20,18 @@ export default function TripMap({dayId,onPlace,counts,onOverview}:Props){
   const [ready,setReady]=useState(false);
   const [loaded,setLoaded]=useState(false);
   const [error,setError]=useState("");
+  const [configured]=useState(()=>Boolean(readDeviceMapConfig()));
+  const [settingsOpen,setSettingsOpen]=useState(false);
   const [scope,setScope]=useState<"west"|"all">("west");
   const [viewRevision,setViewRevision]=useState(0);
   const [layerMode,setLayerMode]=useState<LayerMode>(()=>{
     try{return localStorage.getItem("chuanxi-map-layer")==="satellite"?"satellite":"standard";}catch{return "standard";}
   });
   useEffect(()=>{
+    if(!configured)return;
     let disposed=false;let resize:ResizeObserver|undefined;let timeout:number|undefined;
-    loadAMap().then(async A=>{
-      const converted=await convertTripCoordinates(A);
+    loadAMap().then(A=>{
+      const converted=getTripCoordinates();
       if(disposed||!el.current)return;
       lib.current=A;coordinates.current=converted;
       layers.current={standard:A.createDefaultLayer(),satellite:new A.TileLayer.Satellite(),roads:new A.TileLayer.RoadNet()};
@@ -37,7 +42,7 @@ export default function TripMap({dayId,onPlace,counts,onOverview}:Props){
       resize=new ResizeObserver(()=>m.resize());resize.observe(el.current);setReady(true);
     }).catch(reason=>{if(!disposed)setError(reason instanceof Error?reason.message:"高德地图暂未加载，请重试。");});
     return()=>{disposed=true;window.clearTimeout(timeout);resize?.disconnect();map.current?.destroy();map.current=null;overlays.current=[];};
-  },[]);
+  },[configured]);
   useEffect(()=>{
     if(!ready||!map.current||!layers.current)return;
     const l=layers.current;map.current.setLayers(layerMode==="satellite"?[l.satellite,l.roads]:[l.standard]);
@@ -86,8 +91,11 @@ export default function TripMap({dayId,onPlace,counts,onOverview}:Props){
       <ToggleGroupItem value="satellite" aria-label="卫星地图"><Satellite size={16}/>卫星地图</ToggleGroupItem>
     </ToggleGroup>
     <div className="map-zoom"><button aria-label="放大地图" disabled={!ready} onClick={()=>map.current?.zoomIn()}><Plus size={20}/></button><button aria-label="缩小地图" disabled={!ready} onClick={()=>map.current?.zoomOut()}><Minus size={20}/></button></div>
-    {!loaded&&!error&&<div className="map-loading" role="status"><LoaderCircle size={16} className="animate-spin"/>正在加载高德地图…</div>}
+    <button className="map-config-action" aria-label="地图配置" title="地图配置" onClick={()=>setSettingsOpen(true)}><Settings2 size={18}/></button>
+    {!configured&&<div className="map-setup-prompt"><FileKey2 size={20}/><div><strong>在这台设备启用地图</strong><p>导入私密配置，直接连接高德。</p><button className="primary-button" onClick={()=>setSettingsOpen(true)}>导入地图配置</button></div></div>}
+    {configured&&!loaded&&!error&&<div className="map-loading" role="status"><LoaderCircle size={16} className="animate-spin"/>正在直连高德地图…</div>}
     {error&&<div className="map-error" role="status"><MapPinned size={18}/><span>{error}</span><button onClick={()=>window.location.reload()}>重新加载</button></div>}
+    <MapDeviceSettings open={settingsOpen} onOpenChange={setSettingsOpen} configured={configured}/>
     <div className="route-key"><span><i/>自驾 / 接驳</span><span><i className="rail"/>高铁</span><span><i className="walk"/>步行</span><span className="key-note">连线为行程示意，非道路导航</span></div>
   </>;
 }

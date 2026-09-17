@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { parseDeviceMapConfig, saveDeviceMapConfig, readDeviceMapConfig, clearDeviceMapConfig, DEVICE_CONFIG_STORAGE } from '../lib/amap-device-config.ts';
 import { places, routes } from '../lib/trip-data.ts';
+import { buildCoordinateIndex, coordinateKey } from '../lib/map-coordinates.ts';
 
 const sample = {format:'chuanxi-amap-device-v1', key:'1'.repeat(32), securityJsCode:'2'.repeat(32)};
 test('private configuration validates credentials and cannot inject remote hosts', () => {
@@ -44,13 +45,15 @@ test('unavailable browser storage is reported without echoing credentials', () =
 test('every spot, route vertex and overview corner has a local official coordinate', () => {
   const converted=JSON.parse(readFileSync(new URL('../lib/trip-coordinates.json',import.meta.url)));
   const points=[...places.map(p=>[p.lat,p.lng]),...routes.flatMap(r=>r.coords),[28.28,99.99],[31.25,104.19]];
-  const expected=new Set(points.map(([lat,lng])=>`${lat},${lng}`));
-  assert.deepEqual(new Set(Object.keys(converted)),expected);
+  const index=buildCoordinateIndex(converted,places);
   for(const [lat,lng] of points){
-    const coordinate=converted[`${lat},${lng}`];
+    const coordinate=index.get(coordinateKey(lat,lng));
     assert.equal(coordinate.length,2);
     assert.ok(coordinate.every(Number.isFinite));
     assert.ok(Math.abs(coordinate[0]-lng)<0.02 && Math.abs(coordinate[1]-lat)<0.02);
+  }
+  for(const place of places.filter(p=>p.gcj02)){
+    assert.deepEqual(index.get(coordinateKey(place.lat,place.lng)),place.gcj02,'AMap hotel coordinates must not be converted a second time');
   }
 });
 

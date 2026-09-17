@@ -2,12 +2,20 @@
 import {useEffect,useRef,useState} from "react";
 import {Maximize,LocateFixed,MapPinned,Map as MapIcon,Satellite,Plus,Minus,LoaderCircle,Settings2,FileKey2} from "lucide-react";
 import {ToggleGroup,ToggleGroupItem} from "@/components/ui/toggle-group";
-import {days,places,placeById,overviewIds,routes} from "@/lib/trip-data";
+import {days,places,placeById,overviewIds,routes,dayPlaceIds} from "@/lib/trip-data";
+import {drivingRoutes,drivingRouteFor,shortPlaceNames} from "@/lib/trip-driving";
 import {loadAMap,getTripCoordinates,coordinateKey,type AMapAPI,type MapInstance,type Overlay,type Position} from "@/lib/amap";
 import {readDeviceMapConfig} from "@/lib/amap-device-config";
 import {createTripLayers,setTripLayerMode,type LayerMode,type TripLayers} from "@/lib/amap-layers";
 import MapDeviceSettings from "./map-device-settings";
 type Props={dayId:number;onPlace:(id:string)=>void;counts:Record<string,number>;onOverview:()=>void};
+const mapPlaceIds=(dayId:number,scope:"west"|"all")=>{
+  const day=days.find(d=>d.id===dayId);
+  if(day)return dayPlaceIds(day);
+  const westIds=new Set(days.filter(d=>d.id>=6&&d.id<=12).flatMap(dayPlaceIds));
+  return Array.from(new Set([...overviewIds,...places.filter(p=>p.category==="住宿").map(p=>p.id),"yading-parking"]))
+    .filter(id=>scope==="all"||westIds.has(id));
+};
 
 export default function TripMap({dayId,onPlace,counts,onOverview}:Props){
   const el=useRef<HTMLDivElement>(null);
@@ -53,35 +61,50 @@ export default function TripMap({dayId,onPlace,counts,onOverview}:Props){
     const A=lib.current,m=map.current;if(!ready||!A||!m)return;
     m.remove(overlays.current);const next:Overlay[]=[];
     const d=days.find(x=>x.id===dayId);
-    const ids=d?Array.from(new Set([...d.stops,...(d.optional||[])])):overviewIds;
+    const ids=mapPlaceIds(dayId,scope);
     const pts=ids.map(id=>placeById[id]);
     const position=(lat:number,lng:number)=>coordinates.current.get(coordinateKey(lat,lng))!;
     const shown=dayId?routes.filter(r=>r.day===dayId):routes.filter(r=>scope==="all"||r.day>=6);
     shown.forEach(r=>{
       const color=r.mode==="rail"?"#c5762c":r.mode==="flight"?"#72819b":r.mode==="walk"?"#14886c":"#2c60d9";
-      const line=new A.Polyline({path:r.coords.map(([lat,lng])=>position(lat,lng)),strokeColor:color,strokeWeight:4,strokeOpacity:.95,strokeStyle:r.mode==="drive"?"solid":"dashed",strokeDasharray:r.mode==="walk"?[3,6]:[8,8],isOutline:true,borderWeight:2,outlineColor:"#ffffff",lineJoin:"round",cursor:"pointer",zIndex:40});
+      const line=new A.Polyline({path:r.coords.map(([lat,lng])=>position(lat,lng)),strokeColor:color,strokeWeight:4,strokeOpacity:.95,strokeStyle:"dashed",strokeDasharray:r.mode==="walk"?[3,6]:[8,8],isOutline:true,borderWeight:2,outlineColor:"#ffffff",lineJoin:"round",cursor:"pointer",zIndex:40});
       line.on("click",()=>{const first=days[r.day-1].stops.find(id=>placeById[id].category!=="交通");if(first)pick.current(first);});next.push(line);
     });
+    const roads=dayId?drivingRoutes.filter(r=>r.day===dayId):drivingRoutes;
+    roads.forEach(r=>{
+      // Official road geometry is already GCJ-02. Never substitute a direct line.
+      const line=new A.Polyline({path:r.coordinates,strokeColor:"#2c60d9",strokeWeight:5,strokeOpacity:.9,isOutline:true,borderWeight:2,outlineColor:"#ffffff",lineJoin:"round",showDir:true,cursor:"pointer",zIndex:45});
+      line.on("click",()=>pick.current(r.to));next.push(line);
+    });
+    const activeRoad=drivingRouteFor(dayId);
     pts.forEach((p,i)=>{
       const button=document.createElement("button");button.type="button";
-      button.className=`pin-body ${p.category==="交通"?"transit":""} ${d?.optional?.includes(p.id)?"optional":""}`;
+      const endpoint=activeRoad?.from===p.id?"start":activeRoad?.to===p.id?"finish":"";
+      button.className=`pin-body ${p.category==="交通"?"transit":""} ${p.category==="住宿"?"hotel":""} ${endpoint} ${d?.optional?.includes(p.id)?"optional":""}`;
       button.setAttribute("aria-label",`查看${p.name}，${counts[p.id]||0}张旅行照片`);button.dataset.placeId=p.id;
-      const dot=document.createElement("span");dot.className="pin-dot";dot.textContent=dayId?String(i+1):"";button.appendChild(dot);
-      const label=document.createElement("span");label.className="pin-name";label.textContent=p.name.replace(" · 双桥沟","").replace(" · 远眺","");button.appendChild(label);
+      const dot=document.createElement("span");dot.className="pin-dot";dot.textContent=endpoint==="start"?"起":endpoint==="finish"?"终":p.category==="住宿"?"宿":dayId?String(i+1):"";button.appendChild(dot);
+      const label=document.createElement("span");label.className="pin-name";label.textContent=shortPlaceNames[p.id]||p.name.replace(" · 双桥沟","").replace(" · 远眺","");button.appendChild(label);
       if(counts[p.id]){const count=document.createElement("span");count.className="pin-count";count.textContent=String(counts[p.id]);button.appendChild(count);}
       button.addEventListener("click",event=>{event.stopPropagation();pick.current(p.id);});
-      next.push(new A.Marker({position:position(p.lat,p.lng),content:button,offset:new A.Pixel(-12,-12),anchor:"top-left",title:p.name,zIndex:p.category==="交通"?100:110}));
+      next.push(new A.Marker({position:position(p.lat,p.lng),content:button,offset:new A.Pixel(-12,-12),anchor:"top-left",title:p.name,zIndex:endpoint?150:p.category==="住宿"?130:p.category==="交通"?100:110}));
     });
     m.add(next);overlays.current=next;return()=>{m.remove(next);};
   },[ready,dayId,scope,counts]);
   useEffect(()=>{
     const A=lib.current,m=map.current;if(!ready||!A||!m)return;
-    const d=days.find(x=>x.id===dayId);
-    const ids=d?Array.from(new Set([...d.stops,...(d.optional||[])])):["nanjing",...overviewIds];
-    const points=dayId||scope==="all"?places.filter(p=>ids.includes(p.id)).map(p=>[p.lat,p.lng]):[[28.28,99.99],[31.25,104.19]];
-    const fitting=points.map(([lat,lng])=>new A.Marker({position:coordinates.current.get(coordinateKey(lat,lng))}));
+    const ids=[...mapPlaceIds(dayId,scope),...(!dayId&&scope==="all"?["nanjing"]:[])];
+    const points:Position[]=ids.map(id=>placeById[id]).map(p=>coordinates.current.get(coordinateKey(p.lat,p.lng))!);
+    const roads=dayId?drivingRoutes.filter(r=>r.day===dayId):drivingRoutes;
+    // Fit only the bounding corners, avoiding thousands of temporary markers.
+    const bounds=roads.flatMap(r=>r.coordinates).concat(points);
+    const min:Position=[Infinity,Infinity],max:Position=[-Infinity,-Infinity];
+    bounds.forEach(([lng,lat])=>{min[0]=Math.min(min[0],lng);min[1]=Math.min(min[1],lat);max[0]=Math.max(max[0],lng);max[1]=Math.max(max[1],lat);});
+    const fitting=[min,max].map(position=>new A.Marker({position}));
     const narrow=(el.current?.clientWidth||0)<600;
-    m.setFitView(fitting,false,narrow?[195,130,38,85]:[245,160,65,270],dayId?(points.length<=2?16:13):8);
+    const bottom=el.current?.parentElement?.querySelector(".map-bottom")?.getBoundingClientRect().height||110;
+    const top=narrow?200:250;
+    const bottomPadding=Math.min(bottom+45,(el.current?.clientHeight||600)*.4);
+    m.setFitView(fitting,false,narrow?[top,bottomPadding,35,110]:[top,bottomPadding,65,270],dayId?(points.length<=2?16:13):8);
   },[ready,dayId,scope,viewRevision]);
   return <>
     <div ref={el} className="map-canvas" data-map-provider="amap" data-map-layer={layerMode} data-map-ready={loaded} aria-label="高德旅行地图，点选地点查看介绍与照片"/>
@@ -97,6 +120,6 @@ export default function TripMap({dayId,onPlace,counts,onOverview}:Props){
     {configured&&!loaded&&!error&&<div className="map-loading" role="status"><LoaderCircle size={16} className="animate-spin"/>正在直连高德地图…</div>}
     {error&&<div className="map-error" role="status"><MapPinned size={18}/><span>{error}</span><button onClick={()=>window.location.reload()}>重新加载</button></div>}
     <MapDeviceSettings open={settingsOpen} onOpenChange={setSettingsOpen} configured={configured}/>
-    <div className="route-key"><span><i/>自驾 / 接驳</span><span><i className="rail"/>高铁</span><span><i className="walk"/>步行</span><span className="key-note">连线为行程示意，非道路导航</span></div>
+    <div className="route-key"><span><i/>住宿间驾车</span><span><i className="hotel"/>酒店</span><span className="key-note">蓝线沿道路 · 虚线为其他交通示意</span></div>
   </>;
 }

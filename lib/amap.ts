@@ -1,5 +1,8 @@
 import { readDeviceMapConfig } from "./amap-device-config";
 import savedCoordinates from "./trip-coordinates.json";
+import { places } from "./trip-data";
+import { buildCoordinateIndex } from "./map-coordinates";
+export { coordinateKey } from "./map-coordinates";
 export type Position = [number, number]; // AMap: longitude, latitude (GCJ-02).
 export type Overlay = { on: (event: string, callback: () => void) => void };
 export type BaseLayer = { show: () => void; hide: () => void };
@@ -26,7 +29,6 @@ declare global {
   }
 }
 let apiPromise: Promise<AMapAPI> | undefined;
-export const coordinateKey = (lat: number, lng: number) => `${lat},${lng}`;
 
 export function loadAMap(): Promise<AMapAPI> {
   const config = readDeviceMapConfig();
@@ -59,5 +61,5 @@ export function loadAMap(): Promise<AMapAPI> {
 export function getTripCoordinates(): Map<string, Position> {
   // These fixed WGS84 itinerary coordinates were converted once by the official
   // AMap JS coordinate service. Viewing the trip needs no online conversion.
-  return new Map(Object.entries(savedCoordinates).map(([key, value]) => [key, [value[0], value[1]]]));
+  return buildCoordinateIndex(savedCoordinates, places);
 }

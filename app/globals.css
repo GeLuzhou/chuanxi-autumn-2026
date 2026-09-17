@@ -49,3 +49,28 @@
 .map-settings-error{color:#a44933;background:#fff3ed;border:1px solid #efcbbb;border-radius:7px;padding:9px 12px;font-size:13px;line-height:1.6;margin:0}
 .map-config-clear{display:flex;align-items:center;justify-content:center;gap:7px;background:none;border:0;color:#7b8996;font-size:13px;padding:7px}
 @media(max-width:640px){.map-config-action{right:13px;top:101px;width:34px;height:32px}.map-setup-prompt{left:13px;top:198px;max-width:calc(100% - 26px);padding:14px 16px;gap:9px}.map-setup-prompt strong{font-size:15px}.map-settings-dialog[data-slot="dialog-content"]{padding:24px}}
+
+.pin-body.hotel .pin-dot,.pin-body.finish .pin-dot{background:#7a51ad;box-shadow:0 0 0 1px #7a51ad44}
+.pin-body.hotel .pin-name{border-color:#d8c9ea;color:#65418e}
+.pin-body.start .pin-dot{background:#18866b;box-shadow:0 0 0 1px #18866b44}
+.route-key i.hotel{width:9px;height:9px;background:#7a51ad;border-radius:50%}
+.driving-summary{padding:14px;background:#f0f5ff;border:1px solid #dce7fb;border-radius:9px;margin:14px 0;color:#345275}
+.driving-label{display:flex;align-items:center;gap:6px;font-size:12px;color:#637b96;margin-bottom:8px}
+.driving-endpoints{font-size:13px;line-height:1.8;overflow-wrap:anywhere}
+.driving-endpoints>span{display:inline}
+.driving-endpoints button{color:#365b92;text-align:left;border:0;background:none;padding:0;cursor:pointer}
+.driving-endpoints button:hover{text-decoration:underline}
+.driving-arrow{padding:0 7px;color:#91a1b4}
+.driving-stats{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:8px;font-size:12px}
+.driving-stats a{display:inline-flex;align-items:center;gap:2px;color:#245de4;white-space:nowrap}
+.driving-summary .driving-note{color:#60768c;line-height:1.7;font-size:12px;margin:9px 0 0}
+.driving-summary .driving-reference{color:#8391a0;font-size:11px;line-height:1.6;margin:6px 0 0}
+.driving-summary.compact{background:none;border:0;padding:0;margin:7px 0 0}
+.driving-summary.compact .driving-label{margin-bottom:3px}
+.driving-summary.compact .driving-stats{margin-top:3px}
+.driving-summary.compact .driving-note{margin-top:3px}
+.map-workspace:has(.driving-summary) .route-key{display:none}
+.map-workspace:has(.driving-summary) .bottom-icon{display:none}
+.map-workspace:has(.driving-summary) .bottom-detail{align-self:flex-start;flex-shrink:0}
+.day-meta svg{flex-shrink:0}
+@media(max-width:640px){.driving-summary.compact .driving-endpoints{font-size:12px}.map-workspace:has(.driving-summary) .map-bottom{gap:7px}.driving-summary.compact .driving-label{display:none}}

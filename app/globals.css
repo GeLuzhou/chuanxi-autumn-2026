@@ -53,6 +53,7 @@
 .pin-body.hotel .pin-dot,.pin-body.finish .pin-dot{background:#7a51ad;box-shadow:0 0 0 1px #7a51ad44}
 .pin-body.hotel .pin-name{border-color:#d8c9ea;color:#65418e}
 .pin-body.start .pin-dot{background:#18866b;box-shadow:0 0 0 1px #18866b44}
+.pin-body.waypoint .pin-dot{background:#ba772c;box-shadow:0 0 0 1px #ba772c44}
 .route-key i.hotel{width:9px;height:9px;background:#7a51ad;border-radius:50%}
 .driving-summary{padding:14px;background:#f0f5ff;border:1px solid #dce7fb;border-radius:9px;margin:14px 0;color:#345275}
 .driving-label{display:flex;align-items:center;gap:6px;font-size:12px;color:#637b96;margin-bottom:8px}
@@ -74,3 +75,13 @@
 .map-workspace:has(.driving-summary) .bottom-detail{align-self:flex-start;flex-shrink:0}
 .day-meta svg{flex-shrink:0}
 @media(max-width:640px){.driving-summary.compact .driving-endpoints{font-size:12px}.map-workspace:has(.driving-summary) .map-bottom{gap:7px}.driving-summary.compact .driving-label{display:none}}
+.driving-navigation{position:relative}
+.driving-navigation summary{display:flex;align-items:center;gap:2px;cursor:pointer;color:#245de4;list-style:none;white-space:nowrap}
+.driving-navigation summary::-webkit-details-marker{display:none}
+.driving-navigation-list{min-width:220px;max-height:280px;overflow-y:auto;padding:10px 13px;border:1px solid #dce7fb;border-radius:9px;background:#fff;box-shadow:0 5px 24px #24405425}
+.driving-navigation-list p{font-size:12px!important;margin:0 0 5px!important;color:#768ba3!important}
+.driving-navigation-list a{display:flex;align-items:center;justify-content:space-between;gap:7px;border-top:1px solid #edf1f6;padding:9px 0;white-space:normal;line-height:1.7;font-size:12px}
+.driving-navigation-list small{display:block;color:#7b8da1;font-size:11px}
+.driving-navigation-list svg{flex-shrink:0}
+.compact .driving-navigation{position:static}
+.compact .driving-navigation-list{position:absolute;bottom:calc(100% + 8px);left:10px;right:10px;width:auto;max-height:min(280px,40dvh);overscroll-behavior:contain;z-index:20}
